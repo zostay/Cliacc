@@ -1,0 +1,23 @@
+#!/usr/bin/env perl
+use v5.14;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Cliacc::DB;
+
+my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
+
+my $lines = $db->connector->run(fixup => sub {
+    $_->selectall_arrayref(q[
+        SELECT line, reference_number, description, name, pennies
+          FROM entries
+          JOIN accounts ON entries.account = accounts.id
+          JOIN lines ON entries.ledger = lines.id
+    ], { Slice => {} });
+});
+
+for my $line (@$lines) {
+    printf "%-03d %-3s %-20s %-10s %8.2f\n",
+        $line->{line}, $line->{reference_number} // '-',
+        $line->{description}, $line->{name}, $line->{pennies} * .01;
+} 

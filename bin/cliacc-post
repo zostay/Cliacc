@@ -1,0 +1,82 @@
+#!/usr/bin/env perl
+use v5.14;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Cliacc::DB;
+
+use Getopt::Long;
+
+my $ref;
+my $left_account;
+my $right_account;
+my $amount;
+my $description;
+my $memo;
+
+GetOptions(
+    'r|ref=s'         => \$ref,
+    'l|left=s'        => \$left_account,
+    'r|right=s'       => \$right_account,
+    'a|amount=f'      => \$amount,
+    'd|description=s' => \$description,
+    'm|memo=s'        => \$memo,
+);
+
+die "Please set --left."        unless $left_account;
+die "Please set --right."       unless $right_account;
+die "Please set --amount."      unless $amount;
+die "Please set --description." unless $description;
+
+my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
+
+my ($left) = $db->connector->run(fixup => sub {
+    $_->selectrow_array(q[
+        SELECT id
+          FROM accounts
+         WHERE name = ?
+    ], undef, $left_account);
+});
+
+die "The --left account was not found." unless $left;
+
+my ($right) = $db->connector->run(fixup => sub {
+    $_->selectrow_array(q[
+        SELECT id
+          FROM accounts
+         WHERE name = ?
+    ], undef, $right_account);
+});
+
+die "The --right account was not found." unless $right;
+
+my ($max_line) = $db->connector->run(fixup => sub {
+    $_->selectrow_array(q[
+        SELECT MAX(line)
+          FROM lines
+    ]);
+}) // 0;
+
+my $line = $max_line + 1;
+
+$db->connector->run(fixup => sub {
+    $_->do(q[
+        INSERT INTO lines(line) VALUES (?)
+    ], undef, $line);
+});
+
+my $pennies = int($amount * 100);
+
+$db->connector->run(fixup => sub {
+    $_->do(q[
+        INSERT INTO entries(ledger, account, reference_number, description, memo, pennies)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ], undef, $line, $left, $ref, $description, $memo, -$pennies);
+});
+
+$db->connector->run(fixup => sub {
+    $_->do(q[
+        INSERT INTO entries(ledger, account, reference_number, description, memo, pennies)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ], undef, $line, $right, $ref, $description, $memo, $pennies);
+});

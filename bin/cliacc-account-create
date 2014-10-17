@@ -1,0 +1,32 @@
+#!/usr/bin/env perl
+use v5.14;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Cliacc::DB;
+
+use Getopt::Long;
+
+my $name;
+my $left = 0;
+my $right = 0;
+
+GetOptions(
+    'n|name=s' => \$name,
+    'l|left'   => \$left,
+    'r|right'  => \$right,
+);
+
+die "Please set --name." unless $name;
+my $account_type = $left  ? 'left'
+                 : $right ? 'right'
+                 :          die "Please set --left or --right.";
+
+my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
+
+$db->connector->run(fixup => sub {
+    $_->do(q[
+        INSERT INTO accounts(name, account_type)
+        VALUES (?, ?)
+    ], undef, $name, $account_type);
+});

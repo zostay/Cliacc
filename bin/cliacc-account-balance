@@ -1,0 +1,39 @@
+#!/usr/bin/env perl
+use v5.14;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Cliacc::DB;
+
+use Getopt::Long;
+
+my $name;
+
+GetOptions(
+    'n|name=s' => \$name,
+);
+
+die "Please set --name." unless $name;
+
+my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
+
+my ($id, $account_type) = $db->connector->run(fixup => sub {
+    $_->selectrow_array(q[
+        SELECT id, account_type
+          FROM accounts
+         WHERE name = ?
+    ], undef, $name);
+});
+
+my ($pennies) = $db->connector->run(fixup => sub {
+    $_->selectrow_array(q[
+        SELECT SUM(pennies)
+          FROM entries
+         WHERE account = ?
+    ], undef, $id);
+});
+
+my $amount  = $pennies * 0.01;
+   $amount *= -1 if $account_type eq 'left';
+
+say "Balance: $amount";

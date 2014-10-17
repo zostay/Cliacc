@@ -1,0 +1,5 @@
+#!/usr/bin/env perl
+use v5.14;
+
+my $subcommand = shift;
+exec "$0-$subcommand", @ARGV;
