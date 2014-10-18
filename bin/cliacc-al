@@ -1,0 +1,53 @@
+#!/usr/bin/env perl
+use v5.14;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Cliacc::DB;
+
+use Getopt::Long;
+
+my $name;
+
+GetOptions(
+    'n|name=s' => \$name,
+);
+
+die "Please set --name." unless $name;
+
+my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
+
+my ($account_type) = $db->connector->run(fixup => sub {
+    $_->selectrow_array(q[
+        SELECT account_type
+          FROM accounts
+         WHERE name = ?
+    ], undef, $name);
+});
+
+my $type_sign = $account_type eq 'left' ? -1 : 1;
+
+my $lines = $db->connector->run(fixup => sub {
+    $_->selectall_arrayref(q[
+        SELECT line, e1.reference_number, e1.description, a2.name, e1.pennies
+          FROM entries e1
+          JOIN accounts a1 ON e1.account = a1.id
+          JOIN lines ON e1.ledger = lines.id
+          JOIN entries e2 ON e2.ledger = lines.id AND e2.id != e1.id
+          JOIN accounts a2 ON e2.account = a2.id
+         WHERE a1.name = ?
+    ], { Slice => {} }, $name);
+});
+
+my $sum = 0;
+for my $line (@$lines) {
+    $line->{pennies} *= $type_sign;
+    $sum += $line->{pennies};
+
+    printf "%-03d %-3s %-20s %-10s %8.2f\n",
+        $line->{line}, $line->{reference_number} // '-',
+        $line->{description}, $line->{name}, $line->{pennies} * .01;
+} 
+
+print ' ' x 40;
+printf "%8.2f\n", $sum * .01;
