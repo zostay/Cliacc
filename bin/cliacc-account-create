@@ -4,6 +4,7 @@ use v5.14;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Cliacc::DB;
+use Cliacc::Service::Account;
 
 use Getopt::Long;
 
@@ -23,10 +24,11 @@ my $account_type = $left  ? 'left'
                  :          die "Please set --left or --right.";
 
 my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
+my $service = Cliacc::Service::Account->new( db => $db );
 
-$db->connector->run(fixup => sub {
-    $_->do(q[
-        INSERT INTO accounts(name, account_type)
-        VALUES (?, ?)
-    ], undef, $name, $account_type);
-});
+my $account = Cliacc::Model::Account->new(
+    name         => $name,
+    account_type => $account_type,
+);
+
+$service->create_account($account);

@@ -6,20 +6,13 @@ use lib "$FindBin::Bin/../lib";
 use Cliacc::DB;
 use Cliacc::Service::Account;
 
-use Getopt::Long;
-
 my $name;
-
-GetOptions(
-    'n|name=s' => \$name,
-);
-
-die "Please set --name." unless $name;
 
 my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
 my $service = Cliacc::Service::Account->new( db => $db );
 
-my $account = $service->get_account_by_name($name);
-$service->get_account_balance($account);
+my @accounts = $service->list_accounts;
+for my $account (@accounts) {
+    printf "%-10s %-5s\n", $account->name, $account->account_type;
+}
 
-printf "Balance: %8.2f\n", $account->balance_amount;
