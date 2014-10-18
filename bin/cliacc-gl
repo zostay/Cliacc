@@ -17,7 +17,16 @@ my $lines = $db->connector->run(fixup => sub {
 });
 
 for my $line (@$lines) {
-    printf "%-03d %-3s %-20s %-10s %8.2f\n",
+    my ($left, $right) = ('', '');
+    if ($line->{pennies} < 0) {
+        $left = sprintf "%8.2f", $line->{pennies} * -0.01;
+    }
+    else {
+        $right = sprintf "%8.2f", $line->{pennies} * 0.01;
+    }
+
+    printf "%-03d %-3s %-20s %-10s %8s %8s\n",
         $line->{line}, $line->{reference_number} // '-',
-        $line->{description}, $line->{name}, $line->{pennies} * .01;
+        $line->{description}, $line->{name}, 
+        $left, $right;
 } 
