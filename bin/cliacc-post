@@ -4,6 +4,8 @@ use v5.14;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Cliacc::DB;
+use Cliacc::Service::Account;
+use Cliacc::Service::Ledger;
 
 use Getopt::Long;
 
@@ -29,54 +31,31 @@ die "Please set --amount."      unless $amount;
 die "Please set --description." unless $description;
 
 my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
+my $accounts = Cliacc::Service::Account->new( db => $db );
+my $ledgers  = Cliacc::Service::Ledger->new( db => $db );
 
-my ($left) = $db->connector->run(fixup => sub {
-    $_->selectrow_array(q[
-        SELECT id
-          FROM accounts
-         WHERE name = ?
-    ], undef, $left_account);
-});
-
+my ($left) = $accounts->get_account_by_name($left_account);
 die "The --left account was not found." unless $left;
 
-my ($right) = $db->connector->run(fixup => sub {
-    $_->selectrow_array(q[
-        SELECT id
-          FROM accounts
-         WHERE name = ?
-    ], undef, $right_account);
-});
-
+my ($right) = $accounts->get_account_by_name($right_account);
 die "The --right account was not found." unless $right;
-
-my ($max_line) = $db->connector->run(fixup => sub {
-    $_->selectrow_array(q[
-        SELECT MAX(line)
-          FROM lines
-    ]);
-}) // 0;
-
-my $line = $max_line + 1;
-
-$db->connector->run(fixup => sub {
-    $_->do(q[
-        INSERT INTO lines(line) VALUES (?)
-    ], undef, $line);
-});
 
 my $pennies = int($amount * 100);
 
-$db->connector->run(fixup => sub {
-    $_->do(q[
-        INSERT INTO entries(ledger, account, reference_number, description, memo, pennies)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ], undef, $line, $left, $ref, $description, $memo, -$pennies);
-});
+my $left_line = Cliacc::Model::AccountLedgerLine->new(
+    account          => $left,
+    reference_number => $ref,
+    description      => $description,
+    memo             => $memo,
+    pennies          => -$pennies,
+);
 
-$db->connector->run(fixup => sub {
-    $_->do(q[
-        INSERT INTO entries(ledger, account, reference_number, description, memo, pennies)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ], undef, $line, $right, $ref, $description, $memo, $pennies);
-});
+my $right_line = Cliacc::Model::AccountLedgerLine->new(
+    account          => $right,
+    reference_number => $ref,
+    description      => $description,
+    memo             => $memo,
+    pennies          => $pennies,
+);
+
+$ledgers->create_ledger($left_line, $right_line);

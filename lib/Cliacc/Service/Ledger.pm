@@ -1,6 +1,7 @@
 package Cliacc::Service::Ledger;
 use Moose;
 
+use List::Util qw( reduce );
 use Cliacc::Model::GeneralLedger;
 use Cliacc::Model::Account;
 use Cliacc::Model::AccountLedgerLine;
@@ -10,6 +11,49 @@ has db => (
     isa         => 'Cliacc::DB',
     required    => 1,
 );
+
+sub create_ledger {
+    my ($self, @ledger_lines) = @_;
+    my $db = $self->db;
+
+    my $balance = reduce { $a + $b->pennies } (0, @ledger_lines);
+    die "ledger lines do not balance" unless $balance == 0;
+
+    my ($max_line) = $db->connector->run(fixup => sub {
+        $_->selectrow_array(q[
+            SELECT MAX(line)
+            FROM lines
+        ]);
+    }) // 0;
+
+    my $line = $max_line + 1;
+
+    my $line_id = $db->connector->run(fixup => sub {
+        $_->do(q[
+            INSERT INTO lines(line) VALUES (?)
+        ], undef, $line);
+
+        $_->last_insert_id("", "", "", "");
+    });
+
+    my $general_ledger = Cliacc::Model::GeneralLedger->new(
+        id   => $line_id,
+        line => $line,
+    );
+
+    for my $ledger_line (@ledger_lines) {
+        $db->connector->run(fixup => sub {
+            $_->do(q[
+                INSERT INTO entries(ledger, account, reference_number, description, memo, pennies)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ], undef, $line_id, $ledger_line->account_id, $ledger_line->reference_number, $ledger_line->description, $ledger_line->memo, $ledger_line->pennies);
+
+            $ledger_line->id( $_->last_insert_id("", "", "", "") );
+        });
+
+        $ledger_line->ledger( $general_ledger );
+    }
+}
 
 sub list_ledger_lines_by_account {
     my ($self, $account) = @_;

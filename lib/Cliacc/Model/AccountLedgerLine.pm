@@ -2,53 +2,49 @@ package Cliacc::Model::AccountLedgerLine;
 use Moose;
 
 has id => (
-    is          => 'ro',
+    is          => 'rw',
     isa         => 'Int',
-    required    => 1,
 );
 
 has ledger => (
-    is          => 'ro',
+    is          => 'rw',
     isa         => 'Cliacc::Model::GeneralLedger',
-    required    => 1,
     handles     => [ qw( line ) ],
 );
 
 has account => (
-    is          => 'ro',
+    is          => 'rw',
     isa         => 'Cliacc::Model::Account',
-    required    => 1,
-    handles     => [ qw( name type_sign ) ],
+    handles     => {
+       account_id => 'id',
+       name       => 'name',
+       type_sign  => 'type_sign',
+   },
 );
 
 has reference_number => (
-    is          => 'ro',
+    is          => 'rw',
     isa         => 'Maybe[Str]',
-    required    => 1,
 );
 
 has description => (
-    is          => 'ro',
+    is          => 'rw',
     isa         => 'Str',
-    required    => 1,
 );
 
 has memo => (
-    is          => 'ro',
+    is          => 'rw',
     isa         => 'Maybe[Str]',
-    required    => 1,
 );
 
 has pennies => (
-    is          => 'ro',
+    is          => 'rw',
     isa         => 'Int',
-    required    => 1,
 );
 
 has transfer_accounts => (
-    is          => 'ro',
+    is          => 'rw',
     isa         => 'ArrayRef[Cliacc::Model::Account]',
-    required    => 1,
     traits      => [ 'Array' ],
     handles     => {
         list_transfer_accounts => 'elements',
