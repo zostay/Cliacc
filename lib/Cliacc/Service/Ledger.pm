@@ -65,4 +65,53 @@ sub list_ledger_lines_by_account {
         values %sl_lines;
 }
 
+sub list_ledger_lines {
+    my $self = shift;
+
+    my $ledger_lines = $self->db->connector->run(fixup => sub {
+        $_->selectall_arrayref(q[
+            SELECT l.id AS line_id, l.line, 
+                   a.id AS account_id, a.name, a.account_type,
+                   e.id AS entry_id, e.reference_number, e.description, e.memo, e.pennies
+              FROM entries e
+              JOIN accounts a ON e.account = a.id
+              JOIN lines l ON e.ledger = l.id
+        ], { Slice => {} });
+    });
+
+    my (%accounts, %sl_lines, %gl_lines);
+
+    for my $ledger_line (@$ledger_lines) {
+        my $gl_line = $gl_lines{ $ledger_line->{line_id} } 
+                  //= Cliacc::Model::GeneralLedger->new(
+                          id   => $ledger_line->{line_id},
+                          line => $ledger_line->{line},
+                      );
+
+        my $sl_account = $accounts{ $ledger_line->{account_id} }
+                      //= Cliacc::Model::Account->new(
+                              id           => $ledger_line->{account_id},
+                              name         => $ledger_line->{name},
+                              account_type => $ledger_line->{account_type},
+                       );
+
+        my $sl_line = $sl_lines{ $ledger_line->{entry_id} }
+                  //= {
+                          id                => $ledger_line->{entry_id},
+                          reference_number  => $ledger_line->{reference_number},
+                          description       => $ledger_line->{description},
+                          memo              => $ledger_line->{memo},
+                          pennies           => $ledger_line->{pennies},
+                          ledger            => $gl_line,
+                          account           => $sl_account,
+                          transfer_accounts => [],
+                      };
+    }
+
+    return 
+        map  { Cliacc::Model::AccountLedgerLine->new($_)     } 
+        sort { $a->{ledger}->line <=> $b->{ledger}->line } 
+        values %sl_lines;
+}
+
 __PACKAGE__->meta->make_immutable;

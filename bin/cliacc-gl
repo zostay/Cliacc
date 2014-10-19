@@ -4,29 +4,24 @@ use v5.14;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Cliacc::DB;
+use Cliacc::Service::Ledger;
 
 my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
+my $ledgers = Cliacc::Service::Ledger->new( db => $db );
 
-my $lines = $db->connector->run(fixup => sub {
-    $_->selectall_arrayref(q[
-        SELECT line, reference_number, description, name, pennies
-          FROM entries
-          JOIN accounts ON entries.account = accounts.id
-          JOIN lines ON entries.ledger = lines.id
-    ], { Slice => {} });
-});
+my @lines = $ledgers->list_ledger_lines;
 
-for my $line (@$lines) {
+for my $line (@lines) {
     my ($left, $right) = ('', '');
-    if ($line->{pennies} < 0) {
-        $left = sprintf "%8.2f", $line->{pennies} * -0.01;
+    if ($line->is_left) {
+        $left = sprintf "%8.2f", $line->left_amount;
     }
     else {
-        $right = sprintf "%8.2f", $line->{pennies} * 0.01;
+        $right = sprintf "%8.2f", $line->right_amount;
     }
 
     printf "%-03d %-3s %-20s %-10s %8s %8s\n",
-        $line->{line}, $line->{reference_number} // '-',
-        $line->{description}, $line->{name}, 
+        $line->line, $line->reference_number // '-',
+        $line->description, $line->name, 
         $left, $right;
 } 

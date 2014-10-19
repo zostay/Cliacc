@@ -18,7 +18,7 @@ has account => (
     is          => 'ro',
     isa         => 'Cliacc::Model::Account',
     required    => 1,
-    handles     => [ qw( type_sign ) ],
+    handles     => [ qw( name type_sign ) ],
 );
 
 has reference_number => (
@@ -55,9 +55,27 @@ has transfer_accounts => (
     },
 );
 
-sub amount { 
+sub is_left  { shift->pennies < 0 }
+sub is_right { shift->pennies > 0 }
+
+sub left_amount {
+    my $self = shift;
+    return $self->is_left ? $self->pennies * -.01 : 0;
+}
+
+sub right_amount {
+    my $self = shift;
+    return $self->is_right ? $self->pennies * .01 : 0;
+}
+
+sub account_amount { 
     my $self = shift;
     return $self->pennies * .01 * $self->type_sign;
+}
+
+sub balance_amount { 
+    my $self = shift;
+    return $self->pennies * .01;
 }
 
 sub transfer_name {
