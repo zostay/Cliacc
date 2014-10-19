@@ -4,6 +4,8 @@ use v5.14;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
 use Cliacc::DB;
+use Cliacc::Service::Account;
+use Cliacc::Service::Ledger;
 
 use Getopt::Long;
 
@@ -16,38 +18,19 @@ GetOptions(
 die "Please set --name." unless $name;
 
 my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
+my $accounts = Cliacc::Service::Account->new( db => $db );
+my $ledgers  = Cliacc::Service::Ledger->new( db => $db );
 
-my ($account_type) = $db->connector->run(fixup => sub {
-    $_->selectrow_array(q[
-        SELECT account_type
-          FROM accounts
-         WHERE name = ?
-    ], undef, $name);
-});
+my $account = $accounts->get_account_by_name($name);
+$accounts->get_account_balance($account);
 
-my $type_sign = $account_type eq 'left' ? -1 : 1;
+my @lines = $ledgers->list_ledger_lines_by_account($account);
 
-my $lines = $db->connector->run(fixup => sub {
-    $_->selectall_arrayref(q[
-        SELECT line, e1.reference_number, e1.description, a2.name, e1.pennies
-          FROM entries e1
-          JOIN accounts a1 ON e1.account = a1.id
-          JOIN lines ON e1.ledger = lines.id
-          JOIN entries e2 ON e2.ledger = lines.id AND e2.id != e1.id
-          JOIN accounts a2 ON e2.account = a2.id
-         WHERE a1.name = ?
-    ], { Slice => {} }, $name);
-});
-
-my $sum = 0;
-for my $line (@$lines) {
-    $line->{pennies} *= $type_sign;
-    $sum += $line->{pennies};
-
+for my $line (@lines) {
     printf "%-03d %-3s %-20s %-10s %8.2f\n",
-        $line->{line}, $line->{reference_number} // '-',
-        $line->{description}, $line->{name}, $line->{pennies} * .01;
+        $line->line, $line->reference_number // '-',
+        $line->description, $line->transfer_name, $line->amount;
 } 
 
 print ' ' x 40;
-printf "%8.2f\n", $sum * .01;
+printf "%8.2f\n", $account->balance_amount;

@@ -22,11 +22,15 @@ has balance => (
     isa         => 'Int',
 );
 
+sub is_left   { shift->account_type eq 'left'  }
+sub is_right  { shift->account_type eq 'right' }
+sub type_sign { shift->is_left ? -1 : 1 }
+
 sub balance_amount {
     my $self = shift;
 
     my $amount  = $self->balance * 0.01;
-       $amount *= -1 if $self->account_type eq 'left';
+       $amount *= $self->type_sign;
 
     return $amount;
 }
