@@ -3,15 +3,14 @@ use v5.14;
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Cliacc::DB;
-use Cliacc::Service::Account;
+use Cliacc;
 
 my $name;
 
-my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
-my $service = Cliacc::Service::Account->new( db => $db );
+my $app = Cliacc->new( root_dir => "$FindBin::Bin/.." );
+my $accounts = $app->acquire('service', 'accounts');
 
-my @accounts = $service->list_accounts;
+my @accounts = $accounts->list_accounts;
 for my $account (@accounts) {
     printf "%-10s %-5s\n", $account->name, $account->account_type;
 }

@@ -3,9 +3,7 @@ use v5.14;
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Cliacc::DB;
-use Cliacc::Service::Account;
-use Cliacc::Service::Ledger;
+use Cliacc;
 
 use Getopt::Long;
 
@@ -17,9 +15,9 @@ GetOptions(
 
 die "Please set --name." unless $name;
 
-my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
-my $accounts = Cliacc::Service::Account->new( db => $db );
-my $ledgers  = Cliacc::Service::Ledger->new( db => $db );
+my $app = Cliacc->new( root_dir => "$FindBin::Bin/.." );
+my $accounts = $app->acquire('service', 'accounts');
+my $ledgers  = $app->acquire('service', 'ledgers');
 
 my $account = $accounts->get_account_by_name($name);
 $accounts->get_account_balance($account);

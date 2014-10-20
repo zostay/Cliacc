@@ -3,8 +3,7 @@ use v5.14;
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Cliacc::DB;
-use Cliacc::Service::Account;
+use Cliacc;
 
 use Getopt::Long;
 
@@ -23,12 +22,12 @@ my $account_type = $left  ? 'left'
                  : $right ? 'right'
                  :          die "Please set --left or --right.";
 
-my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
-my $service = Cliacc::Service::Account->new( db => $db );
+my $app = Cliacc->new( root_dir => "$FindBin::Bin/.." );
+my $accounts = $app->acquire('service', 'accounts');
 
 my $account = Cliacc::Model::Account->new(
     name         => $name,
     account_type => $account_type,
 );
 
-$service->create_account($account);
+$accounts->create_account($account);

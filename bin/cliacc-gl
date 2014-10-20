@@ -3,11 +3,10 @@ use v5.14;
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Cliacc::DB;
-use Cliacc::Service::Ledger;
+use Cliacc;
 
-my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
-my $ledgers = Cliacc::Service::Ledger->new( db => $db );
+my $app = Cliacc->new( root_dir => "$FindBin::Bin/.." );
+my $ledgers = $app->acquire('service', 'ledgers');
 
 my @lines = $ledgers->list_ledger_lines;
 

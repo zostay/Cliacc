@@ -3,11 +3,11 @@ use v5.14;
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Cliacc::DB;
+use Cliacc;
 use File::Slurp qw( read_file );
 
-my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
-my $conn = $db->connector;
+my $app = Cliacc->new( root_dir => "$FindBin::Bin/.." );
+my $conn = $app->acquire('db', 'connector');
 
 my $schema = read_file("$FindBin::Bin/../sql/schema.sql");
 for my $sql (grep { /\S/ } split /;/, $schema) {

@@ -3,9 +3,7 @@ use v5.14;
 
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Cliacc::DB;
-use Cliacc::Service::Account;
-use Cliacc::Service::Ledger;
+use Cliacc;
 
 use Getopt::Long;
 
@@ -30,9 +28,9 @@ die "Please set --right."       unless $right_account;
 die "Please set --amount."      unless $amount;
 die "Please set --description." unless $description;
 
-my $db = Cliacc::DB->new( root => "$FindBin::Bin/.." );
-my $accounts = Cliacc::Service::Account->new( db => $db );
-my $ledgers  = Cliacc::Service::Ledger->new( db => $db );
+my $app = Cliacc->new( root_dir => "$FindBin::Bin/.." );
+my $accounts = $app->acquire('service', 'accounts');
+my $ledgers  = $app->acquire('service', 'ledgers');
 
 my ($left) = $accounts->get_account_by_name($left_account);
 die "The --left account was not found." unless $left;
