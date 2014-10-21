@@ -15,7 +15,7 @@ artifact db => (
 
 bag service => contains {
     artifact accounts => (
-        class => 'Cliacc::Service::Account',
+        class => 'Cliacc::DB::Account',
         parameters => {
             db => dep('db'),
         },
@@ -23,7 +23,7 @@ bag service => contains {
     );
 
     artifact ledgers => (
-        class => 'Cliacc::Service::Ledger',
+        class => 'Cliacc::DB::Ledger',
         parameters => {
             db => dep('db'),
         },
