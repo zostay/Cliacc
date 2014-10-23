@@ -55,6 +55,8 @@ sub create_ledger {
 
         $ledger_line->ledger( $general_ledger );
     }
+
+    return @ledger_lines;
 }
 
 sub list_ledger_lines_by_account {

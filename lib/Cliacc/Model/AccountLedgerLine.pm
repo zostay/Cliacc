@@ -9,6 +9,7 @@ has id => (
 has ledger => (
     is          => 'rw',
     isa         => 'Cliacc::Model::GeneralLedger',
+    predicate   => 'has_ledger',
     handles     => [ qw( line ) ],
 );
 
@@ -46,6 +47,7 @@ has transfer_accounts => (
     is          => 'rw',
     isa         => 'ArrayRef[Cliacc::Model::Account]',
     traits      => [ 'Array' ],
+    predicate   => 'has_transfer_accounts',
     handles     => {
         list_transfer_accounts => 'elements',
     },

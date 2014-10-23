@@ -15,18 +15,12 @@ artifact db => (
 
 bag service => contains {
     artifact accounts => (
-        class => 'Cliacc::DB::Account',
-        parameters => {
-            db => dep('db'),
-        },
+        class => 'Cliacc::MQ::Account',
         scope => 'singleton',
     );
 
     artifact ledgers => (
-        class => 'Cliacc::DB::Ledger',
-        parameters => {
-            db => dep('db'),
-        },
+        class => 'Cliacc::MQ::Ledger',
         scope => 'singleton',
     );
 };

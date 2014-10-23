@@ -39,6 +39,8 @@ sub get_account_by_name {
         ], undef, $name);
     });
 
+    return unless defined $id;
+
     return Cliacc::Model::Account->new(
         id           => $id,
         name         => $name,
@@ -57,7 +59,7 @@ sub get_account_balance {
         ], undef, $account->id);
     });
 
-    $account->balance($pennies);
+    $account->balance($pennies // 0);
 
     return $account;
 }

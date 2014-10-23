@@ -20,6 +20,7 @@ no Moose::Util::TypeConstraints;
 has balance => (
     is          => 'rw',
     isa         => 'Int',
+    predicate   => 'has_balance',
 );
 
 sub is_left   { shift->account_type eq 'left'  }

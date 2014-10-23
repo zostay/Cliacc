@@ -1,10 +1,13 @@
 package Cliacc::Model::GeneralLedger;
 use Moose;
 
+has id => (
+    is          => 'rw',
+);
+
 has line => (
-    is          => 'ro',
+    is          => 'rw',
     isa         => 'Int',
-    required    => 1,
 );
 
 __PACKAGE__->meta->make_immutable;
